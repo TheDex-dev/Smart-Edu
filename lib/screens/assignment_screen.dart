@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'assignment_details_screen.dart';
 
 class AssignmentScreen extends StatefulWidget {
   const AssignmentScreen({super.key});
@@ -28,6 +29,12 @@ class _AssignmentScreenState extends State<AssignmentScreen> {
       'isCompleted': true,
     },
   ];
+
+  void _toggleAssignmentStatus(int index) {
+    setState(() {
+      _assignments[index]['isCompleted'] = !_assignments[index]['isCompleted'];
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -62,11 +69,64 @@ class _AssignmentScreenState extends State<AssignmentScreen> {
               trailing: IconButton(
                 icon: const Icon(Icons.more_vert),
                 onPressed: () {
-                  // Show assignment details or actions
+                  showModalBottomSheet(
+                    context: context,
+                    builder:
+                        (context) => Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            ListTile(
+                              leading: const Icon(Icons.visibility),
+                              title: const Text('View Details'),
+                              onTap: () {
+                                Navigator.pop(context);
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder:
+                                        (context) => AssignmentDetailsScreen(
+                                          assignment: assignment,
+                                          onStatusToggle:
+                                              () => _toggleAssignmentStatus(
+                                                index,
+                                              ),
+                                        ),
+                                  ),
+                                );
+                              },
+                            ),
+                            ListTile(
+                              leading: Icon(
+                                assignment['isCompleted']
+                                    ? Icons.check_circle_outline
+                                    : Icons.check_circle,
+                              ),
+                              title: Text(
+                                assignment['isCompleted']
+                                    ? 'Mark as Incomplete'
+                                    : 'Mark as Complete',
+                              ),
+                              onTap: () {
+                                Navigator.pop(context);
+                                _toggleAssignmentStatus(index);
+                              },
+                            ),
+                          ],
+                        ),
+                  );
                 },
               ),
               onTap: () {
-                // Navigate to assignment details
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder:
+                        (context) => AssignmentDetailsScreen(
+                          assignment: assignment,
+                          onStatusToggle: () => _toggleAssignmentStatus(index),
+                        ),
+                  ),
+                );
               },
             ),
           );
