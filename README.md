@@ -59,13 +59,39 @@ For testing purposes, you can use any email that contains '@' and any password w
 
 ## Getting Started
 
-This project is a starting point for a Flutter application.
+This project is built with Flutter and Dart. To run SmartEdu on your local machine:
 
-A few resources to get you started if this is your first Flutter project:
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/your-username/smart_edu.git
+   cd smart_edu
+   ```
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+2. **Install dependencies**
+   ```bash
+   flutter pub get
+   ```
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+3. **Run the app**
+   ```bash
+   flutter run
+   ```
+
+### Useful Resources
+
+- [Flutter: Write Your First App](https://docs.flutter.dev/get-started/codelab)
+- [Flutter Cookbook](https://docs.flutter.dev/cookbook)
+- [Flutter Documentation](https://docs.flutter.dev/)
+
+## Team
+
+- **Titan** – Project Lead & UI/UX Design
+- **Troy** – Backend Integration & API Development
+- **Dewi** – Frontend Development & State Management
+- **Luqman** – Database Design & Local Storage
+- **Amri** – Testing & Quality Assurance
+
+---
+
+*SmartEdu © 2025 College Project*
+
