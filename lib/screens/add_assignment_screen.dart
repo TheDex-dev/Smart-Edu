@@ -192,6 +192,10 @@ class _AddAssignmentScreenState extends State<AddAssignmentScreen>
   Widget _buildTitleField() {
     return TextFormField(
       controller: _titleController,
+      style: TextStyle(
+        color: Theme.of(context).colorScheme.onSurface,
+        fontSize: 16,
+      ),
       decoration: const InputDecoration(
         labelText: 'Title',
         hintText: 'Enter assignment title',
@@ -236,6 +240,10 @@ class _AddAssignmentScreenState extends State<AddAssignmentScreen>
         return TextFormField(
           controller: controller,
           focusNode: focusNode,
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurface,
+            fontSize: 16,
+          ),
           decoration: const InputDecoration(
             labelText: 'Subject',
             hintText: 'Enter or select a subject',
@@ -268,7 +276,13 @@ class _AddAssignmentScreenState extends State<AddAssignmentScreen>
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(DateFormat('yyyy-MM-dd').format(_dueDate)),
+            Text(
+              DateFormat('yyyy-MM-dd').format(_dueDate),
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface,
+                fontSize: 16,
+              ),
+            ),
             const Icon(Icons.arrow_drop_down),
           ],
         ),
@@ -279,6 +293,10 @@ class _AddAssignmentScreenState extends State<AddAssignmentScreen>
   Widget _buildDescriptionField() {
     return TextFormField(
       controller: _descriptionController,
+      style: TextStyle(
+        color: Theme.of(context).colorScheme.onSurface,
+        fontSize: 16,
+      ),
       decoration: const InputDecoration(
         labelText: 'Description (Optional)',
         hintText: 'Enter details about the assignment',

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/auth.dart';
 import 'settings_screen.dart';
+import '../utils/subject_images.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -81,7 +82,10 @@ class _ProfileScreenState extends State<ProfileScreen>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final primaryColor = theme.colorScheme.primary;
-    final primaryWithAlpha20 = primaryColor.withAlpha(51); // 0.2 opacity
+    final primaryWithAlpha20 = SubjectUtils.getTransparentColor(
+      primaryColor,
+      0.2,
+    );
 
     return Scaffold(
       appBar: AppBar(
@@ -289,7 +293,10 @@ class _ProfileScreenState extends State<ProfileScreen>
   }) {
     final theme = Theme.of(context);
     final primaryColor = theme.colorScheme.primary;
-    final primaryWithAlpha10 = primaryColor.withAlpha(26); // 0.1 opacity
+    final primaryWithAlpha10 = SubjectUtils.getTransparentColor(
+      primaryColor,
+      0.1,
+    );
 
     return Card(
       elevation: 2,

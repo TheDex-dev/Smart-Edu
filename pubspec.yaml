@@ -36,7 +36,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   
   # Date formatting and localization
-  intl: ^0.19.0
+  intl: ^0.20.2
   
   # Shared preferences for local storage
   shared_preferences: ^2.2.2
@@ -44,6 +44,18 @@ dependencies:
   # Animations
   animations: ^2.0.11
   provider: ^6.1.5
+  flutter_animate: ^4.3.0
+  
+  # For caching network images
+  cached_network_image: ^3.3.1
+  
+  # UI enhancements
+  google_fonts: ^6.1.0
+  flutter_staggered_animations: ^1.1.1
+  flutter_svg: ^2.0.9
+  
+  # Performance optimization
+  flutter_displaymode: ^0.6.0
 
 dev_dependencies:
   flutter_test:

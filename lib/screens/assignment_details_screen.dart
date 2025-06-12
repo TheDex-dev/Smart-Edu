@@ -1,5 +1,6 @@
-// filepath: /home/stolas/AndroidStudioProjects/smart_edu/lib/screens/assignment_details_screen.dart
 import 'package:flutter/material.dart';
+import '../utils/subject_images.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class AssignmentDetailsScreen extends StatefulWidget {
   final Map<String, dynamic> assignment;
@@ -133,8 +134,8 @@ class _AssignmentDetailsScreenState extends State<AssignmentDetailsScreen>
                 });
               },
               style: ButtonStyle(
-                backgroundColor: WidgetStatePropertyAll(_buttonBackgroundColor),
-                foregroundColor: WidgetStatePropertyAll(_buttonForegroundColor),
+                backgroundColor: WidgetStateProperty.all(_buttonBackgroundColor),
+                foregroundColor: WidgetStateProperty.all(_buttonForegroundColor),
                 padding: const WidgetStatePropertyAll(
                   EdgeInsets.symmetric(vertical: 16),
                 ),
@@ -166,83 +167,196 @@ class _AssignmentDetailsScreenState extends State<AssignmentDetailsScreen>
   }
 
   Widget _buildAssignmentCard(BuildContext context) {
-    return Card(
-      elevation: 4,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.all(Radius.circular(16)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 300),
-                  decoration: BoxDecoration(
-                    color: _statusBackgroundColor,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  padding: const EdgeInsets.all(8),
-                  child: Icon(_statusIcon, color: _statusColor, size: 28),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    widget.assignment['title'],
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            _buildInfoRow(
-              context,
-              'Subject',
-              widget.assignment['subject'],
-              Icons.subject,
-            ),
-            const SizedBox(height: 12),
-            _buildInfoRow(
-              context,
-              'Due Date',
-              widget.assignment['dueDate'],
-              Icons.calendar_today,
-            ),
-            const SizedBox(height: 12),
-            _buildInfoRow(context, 'Status', _statusText, Icons.info_outline),
-            if (widget.assignment['description'] != null &&
-                widget.assignment['description'].isNotEmpty) ...[
-              const SizedBox(height: 20),
-              const Divider(),
-              const SizedBox(height: 12),
-              _buildDescriptionSection(context),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDescriptionSection(BuildContext context) {
-    return Row(
+    final String subject = widget.assignment['subject'] ?? 'General';
+    final String dueDate = widget.assignment['dueDate'] ?? '';
+    final String description = widget.assignment['description'] ?? 'No description available';
+    
+    // Get subject-specific styling
+    final String imageUrl = SubjectUtils.getImageForSubject(subject);
+    final Color subjectColor = SubjectUtils.getColorForSubject(subject);
+    final String formattedDueDate = SubjectUtils.formatDueDate(dueDate);
+    
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(Icons.description, size: 20, color: Colors.grey[600]),
-        const SizedBox(width: 8),
-        Expanded(
+        // Header image with title overlay
+        Stack(
+          children: [
+            ClipRRect(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+              child: CachedNetworkImage(
+                imageUrl: imageUrl,
+                height: 180,
+                width: double.infinity,
+                fit: BoxFit.cover,
+                placeholder: (context, url) => Container(
+                  height: 180,
+                  color: Colors.grey[200],
+                  child: const Center(
+                    child: CircularProgressIndicator(),
+                  ),
+                ),
+                errorWidget: (context, url, error) => Container(
+                  height: 180,
+                  color: Colors.grey[300],
+                  child: const Center(
+                    child: Icon(Icons.image, size: 40, color: Colors.grey),
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.bottomCenter,
+                    end: Alignment.topCenter,
+                    colors: [
+                      SubjectUtils.getTransparentColor(Colors.black, 0.8),
+                      Colors.transparent,
+                    ],
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.assignment['title'],
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: SubjectUtils.getTransparentColor(subjectColor, 0.8),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            subject,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: _isCompleted ? 
+                              SubjectUtils.getTransparentColor(Colors.green, 0.8) : 
+                              SubjectUtils.getTransparentColor(Colors.orange, 0.8),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                _isCompleted ? Icons.check : Icons.calendar_today,
+                                color: Colors.white,
+                                size: 12,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                _isCompleted ? 'Completed' : formattedDueDate,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 20),
+        
+        // Details section
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Description', style: Theme.of(context).textTheme.bodySmall),
-              const SizedBox(height: 4),
-              Text(
-                widget.assignment['description'],
-                style: Theme.of(context).textTheme.bodyLarge,
+              // Details header
+              const Text(
+                'Details',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
+              const SizedBox(height: 12),
+              
+              // Subject info row
+              _buildInfoRow(
+                context,
+                'Subject',
+                subject,
+                Icons.subject,
+                backgroundColor: SubjectUtils.getTransparentColor(subjectColor, 0.1),
+                iconColor: subjectColor,
+              ),
+              
+              // Due date info row
+              _buildInfoRow(
+                context,
+                'Due Date',
+                dueDate,
+                Icons.calendar_today,
+                backgroundColor: SubjectUtils.getTransparentColor(Colors.orange, 0.1),
+                iconColor: Colors.orange,
+              ),
+              
+              // Status info row
+              _buildInfoRow(
+                context,
+                'Status',
+                _statusText,
+                _statusIcon,
+                backgroundColor: _statusBackgroundColor,
+                iconColor: _statusColor,
+              ),
+              
+              // Description section
+              if (widget.assignment['description'] != null &&
+                  widget.assignment['description'].isNotEmpty) ...[
+                const SizedBox(height: 20),
+                const Divider(),
+                const SizedBox(height: 12),
+                const Text(
+                  'Description',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  description,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    height: 1.5,
+                  ),
+                ),
+              ],
             ],
           ),
         ),
@@ -254,12 +368,14 @@ class _AssignmentDetailsScreenState extends State<AssignmentDetailsScreen>
     BuildContext context,
     String label,
     String value,
-    IconData icon,
-  ) {
-    // Cache theme values to avoid multiple lookups
+    IconData icon, {
+    Color? backgroundColor,
+    Color? iconColor,
+  }) {
+    // Use provided colors or default theme colors
     final ThemeData theme = Theme.of(context);
-    final Color primaryWithAlpha = theme.colorScheme.primary.withAlpha(26);
-    final Color primaryColor = theme.colorScheme.primary;
+    final Color bgColor = backgroundColor ?? SubjectUtils.getTransparentColor(theme.colorScheme.primary, 0.1);
+    final Color icColor = iconColor ?? theme.colorScheme.primary;
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 400),
@@ -281,10 +397,10 @@ class _AssignmentDetailsScreenState extends State<AssignmentDetailsScreen>
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: primaryWithAlpha,
+              color: bgColor,
               borderRadius: const BorderRadius.all(Radius.circular(8)),
             ),
-            child: Icon(icon, size: 20, color: primaryColor),
+            child: Icon(icon, size: 20, color: icColor),
           ),
           const SizedBox(width: 16),
           Column(

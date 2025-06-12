@@ -1,13 +1,52 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_displaymode/flutter_displaymode.dart';
 import 'screens/profile_screen.dart';
 import 'screens/assignment_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/add_assignment_screen.dart';
+import 'screens/splash_screen.dart';
 import 'models/auth.dart';
+import 'utils/performance_config.dart';
 
-void main() {
-  runApp(const MyApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Configure performance settings
+  PerformanceConfig.configureApp();
+
+  // Configure system UI for better integration with OS
+  await PerformanceConfig.configureSystemUI();
+
+  // Enable high refresh rate on supported Android devices
+  try {
+    await FlutterDisplayMode.setHighRefreshRate();
+  } catch (e) {
+    // Ignore if not supported
+  }
+
+  runApp(
+    ChangeNotifierProvider(
+      create: (_) => ThemeProvider(),
+      child: const MyApp(),
+    ),
+  );
+}
+
+class ThemeProvider extends ChangeNotifier {
+  ThemeMode _themeMode = ThemeMode.light;
+
+  ThemeMode get themeMode => _themeMode;
+
+  bool get isDarkMode => _themeMode == ThemeMode.dark;
+
+  void toggleTheme() {
+    _themeMode =
+        _themeMode == ThemeMode.light ? ThemeMode.dark : ThemeMode.light;
+    notifyListeners();
+  }
 }
 
 class MyApp extends StatelessWidget {
@@ -15,24 +54,233 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+
     return MaterialApp(
       title: 'Smart Edu',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
-        textTheme: const TextTheme(
-          headlineMedium: TextStyle(fontWeight: FontWeight.bold),
-          titleLarge: TextStyle(fontWeight: FontWeight.w600),
+      debugShowCheckedModeBanner: false,
+      themeMode: themeProvider.themeMode,
+      theme: _buildLightTheme(),
+      darkTheme: _buildDarkTheme(),
+      home: SplashScreen(
+        child: Auth.isLoggedIn ? const MainScreen() : const LoginScreen(),
+      ),
+    );
+  }
+
+  ThemeData _buildLightTheme() {
+    final baseTheme = ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.light,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: Colors.deepPurple,
+        brightness: Brightness.light,
+        primary: Colors.deepPurple,
+        secondary: Colors.deepPurpleAccent,
+        tertiary: Colors.teal,
+      ),
+    );
+
+    return baseTheme.copyWith(
+      textTheme: GoogleFonts.poppinsTextTheme(baseTheme.textTheme).copyWith(
+        displayLarge: GoogleFonts.poppins(
+          fontWeight: FontWeight.bold,
+          fontSize: 26,
         ),
-        cardTheme: const CardTheme(
+        displayMedium: GoogleFonts.poppins(
+          fontWeight: FontWeight.bold,
+          fontSize: 22,
+        ),
+        headlineMedium: GoogleFonts.poppins(
+          fontWeight: FontWeight.bold,
+          fontSize: 18,
+        ),
+        titleLarge: GoogleFonts.poppins(
+          fontWeight: FontWeight.w600,
+          fontSize: 16,
+        ),
+        bodyLarge: GoogleFonts.poppins(fontSize: 16),
+        bodyMedium: GoogleFonts.poppins(fontSize: 14),
+      ),
+      cardTheme: CardTheme(
+        elevation: 2,
+        shadowColor: Colors.black.withValues(alpha: 0.1),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      ),
+      appBarTheme: AppBarTheme(
+        centerTitle: false,
+        elevation: 0,
+        backgroundColor: baseTheme.colorScheme.inversePrimary,
+        titleTextStyle: GoogleFonts.poppins(
+          fontWeight: FontWeight.bold,
+          fontSize: 20,
+          color: baseTheme.colorScheme.primary,
+        ),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
           elevation: 2,
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(Radius.circular(12)),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          backgroundColor: baseTheme.colorScheme.primary,
+          foregroundColor: baseTheme.colorScheme.onPrimary,
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: Colors.grey.shade50,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.grey.shade200),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(
+            color: baseTheme.colorScheme.secondary,
+            width: 2,
           ),
         ),
-        appBarTheme: const AppBarTheme(centerTitle: false, elevation: 0),
+        contentPadding: const EdgeInsets.all(16),
+        hintStyle: GoogleFonts.poppins(
+          fontSize: 14,
+          color: Colors.grey.shade600,
+        ),
+        labelStyle: GoogleFonts.poppins(
+          fontSize: 14,
+          color: Colors.grey.shade700,
+        ),
+        floatingLabelStyle: GoogleFonts.poppins(
+          fontSize: 14,
+          color: baseTheme.colorScheme.primary,
+        ),
       ),
-      home: Auth.isLoggedIn ? const MainScreen() : const LoginScreen(),
+      bottomNavigationBarTheme: BottomNavigationBarThemeData(
+        selectedItemColor: baseTheme.colorScheme.primary,
+        unselectedItemColor: Colors.grey.shade600,
+        backgroundColor: Colors.white,
+        elevation: 0,
+        type: BottomNavigationBarType.fixed,
+        selectedLabelStyle: GoogleFonts.poppins(
+          fontWeight: FontWeight.bold,
+          fontSize: 12,
+        ),
+        unselectedLabelStyle: GoogleFonts.poppins(fontSize: 11),
+      ),
+    );
+  }
+
+  ThemeData _buildDarkTheme() {
+    final baseTheme = ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.dark,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: Colors.deepPurple,
+        brightness: Brightness.dark,
+        primary: Colors.deepPurpleAccent,
+        secondary: Colors.deepPurple,
+        tertiary: Colors.tealAccent,
+      ),
+    );
+
+    return baseTheme.copyWith(
+      scaffoldBackgroundColor: const Color(0xFF121212),
+      textTheme: GoogleFonts.poppinsTextTheme(baseTheme.textTheme).copyWith(
+        displayLarge: GoogleFonts.poppins(
+          fontWeight: FontWeight.bold,
+          fontSize: 26,
+        ),
+        displayMedium: GoogleFonts.poppins(
+          fontWeight: FontWeight.bold,
+          fontSize: 22,
+        ),
+        headlineMedium: GoogleFonts.poppins(
+          fontWeight: FontWeight.bold,
+          fontSize: 18,
+        ),
+        titleLarge: GoogleFonts.poppins(
+          fontWeight: FontWeight.w600,
+          fontSize: 16,
+        ),
+        bodyLarge: GoogleFonts.poppins(fontSize: 16),
+        bodyMedium: GoogleFonts.poppins(fontSize: 14),
+      ),
+      cardTheme: CardTheme(
+        elevation: 4,
+        shadowColor: Colors.black.withValues(alpha: 0.3),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        color: const Color(0xFF1E1E1E),
+      ),
+      appBarTheme: AppBarTheme(
+        centerTitle: false,
+        elevation: 0,
+        backgroundColor: const Color(0xFF1E1E1E),
+        titleTextStyle: GoogleFonts.poppins(
+          fontWeight: FontWeight.bold,
+          fontSize: 20,
+          color: baseTheme.colorScheme.primary,
+        ),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          elevation: 2,
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          backgroundColor: baseTheme.colorScheme.primary,
+          foregroundColor: baseTheme.colorScheme.onPrimary,
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: const Color(0xFF2A2A2A),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFF3A3A3A)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(
+            color: baseTheme.colorScheme.secondary,
+            width: 2,
+          ),
+        ),
+        contentPadding: const EdgeInsets.all(16),
+        hintStyle: GoogleFonts.poppins(
+          fontSize: 14,
+          color: Colors.grey.shade400,
+        ),
+        labelStyle: GoogleFonts.poppins(
+          fontSize: 14,
+          color: Colors.grey.shade300,
+        ),
+        floatingLabelStyle: GoogleFonts.poppins(
+          fontSize: 14,
+          color: baseTheme.colorScheme.primary,
+        ),
+      ),
+      bottomNavigationBarTheme: BottomNavigationBarThemeData(
+        selectedItemColor: baseTheme.colorScheme.primary,
+        unselectedItemColor: Colors.grey.shade400,
+        backgroundColor: const Color(0xFF1E1E1E),
+        elevation: 0,
+        type: BottomNavigationBarType.fixed,
+        selectedLabelStyle: GoogleFonts.poppins(
+          fontWeight: FontWeight.bold,
+          fontSize: 12,
+        ),
+        unselectedLabelStyle: GoogleFonts.poppins(fontSize: 11),
+      ),
     );
   }
 }
@@ -50,12 +298,12 @@ class _MainScreenState extends State<MainScreen>
   late AnimationController _animationController;
   late Animation<double> _fabAnimation;
 
-  // Cache for animations
+  // Animation transitions
   late final Animatable<Offset> _settingsRouteOffset;
   late final Animatable<Offset> _addAssignmentRouteOffset;
   late final Animatable<Offset> _screenTransitionOffset;
 
-  // Cached screens for better performance
+  // Cached screens for better performance - pre-constructed
   static const List<Widget> _screens = [
     AssignmentScreen(),
     SizedBox(), // Placeholder for add button
@@ -75,7 +323,7 @@ class _MainScreenState extends State<MainScreen>
       curve: Curves.easeOut,
     );
 
-    // Initialize animation tweens
+    // Initialize animation tweens with curves for better visual appeal
     _settingsRouteOffset = Tween<Offset>(
       begin: const Offset(0.2, 0.0),
       end: Offset.zero,
@@ -89,7 +337,7 @@ class _MainScreenState extends State<MainScreen>
     _screenTransitionOffset = Tween<Offset>(
       begin: const Offset(0.05, 0.0),
       end: Offset.zero,
-    );
+    ).chain(CurveTween(curve: Curves.easeOutCubic));
 
     _animationController.forward();
   }
@@ -226,40 +474,98 @@ class _MainScreenState extends State<MainScreen>
   }
 
   Widget _buildBottomNavigationBar(Color primaryColor) {
-    return BottomNavigationBar(
-      items: <BottomNavigationBarItem>[
-        const BottomNavigationBarItem(
-          icon: Icon(Icons.assignment),
-          label: 'Assignments',
+    return Container(
+      decoration: BoxDecoration(
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 8,
+            offset: const Offset(0, -2),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(20),
+          topRight: Radius.circular(20),
         ),
-        BottomNavigationBarItem(icon: _buildAddButton(primaryColor), label: ''),
-        const BottomNavigationBarItem(
-          icon: Icon(Icons.shelves),
-          label: 'Assignments',
+        child: BottomNavigationBar(
+          items: <BottomNavigationBarItem>[
+            const BottomNavigationBarItem(
+              icon: Icon(Icons.assignment),
+              label: 'Assignments',
+              tooltip: 'View your assignments',
+            ),
+            BottomNavigationBarItem(
+              icon: _buildAddButton(primaryColor),
+              label: '',
+              tooltip: 'Add new assignment',
+            ),
+            const BottomNavigationBarItem(
+              icon: Icon(Icons.shelves),
+              label: 'Library',
+              tooltip: 'Access library resources',
+            ),
+            const BottomNavigationBarItem(
+              icon: Icon(Icons.person),
+              label: 'Profile',
+              tooltip: 'View your profile',
+            ),
+          ],
+          currentIndex: _selectedIndex,
+          onTap: _onItemTapped,
+          selectedItemColor: primaryColor,
+          unselectedItemColor: Colors.grey.shade600,
+          showUnselectedLabels: true,
+          elevation: 0,
+          backgroundColor:
+              Theme.of(context).brightness == Brightness.dark
+                  ? const Color(0xFF1E1E1E)
+                  : Colors.white,
+          type: BottomNavigationBarType.fixed,
+          selectedLabelStyle: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 12,
+          ),
+          unselectedLabelStyle: const TextStyle(fontSize: 11),
         ),
-        const BottomNavigationBarItem(
-          icon: Icon(Icons.person),
-          label: 'Profile',
-        ),
-      ],
-      currentIndex: _selectedIndex,
-      onTap: _onItemTapped,
-      selectedItemColor: primaryColor,
-      unselectedItemColor: Colors.grey,
-      showUnselectedLabels: true,
-      elevation: 8,
+      ),
     );
   }
 
   Widget _buildAddButton(Color primaryColor) {
+    // Use precalculated values for better performance
+    const double startScale = 1.0;
+    const double endScale = 1.2;
+    const double iconSize = 40;
+
     return TweenAnimationBuilder<double>(
-      tween: Tween<double>(begin: 1.0, end: 1.2),
+      tween: Tween<double>(begin: startScale, end: endScale),
       duration: const Duration(milliseconds: 400),
       curve: Curves.easeInOut,
       builder: (context, value, child) {
         return Transform.scale(
           scale: value,
-          child: Icon(Icons.add_circle, size: 40, color: primaryColor),
+          child: Container(
+            width: iconSize,
+            height: iconSize,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [primaryColor, primaryColor.withValues(alpha: 0.8)],
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: primaryColor.withValues(alpha: 0.4),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: const Icon(Icons.add, color: Colors.white, size: 24),
+          ),
         );
       },
     );

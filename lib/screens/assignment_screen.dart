@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'assignment_details_screen.dart';
 import 'add_assignment_screen.dart';
+import '../widgets/custom_card.dart';
+import '../utils/subject_images.dart';
+import '../utils/performance_config.dart';
 
 class AssignmentScreen extends StatefulWidget {
   const AssignmentScreen({super.key});
@@ -10,16 +14,23 @@ class AssignmentScreen extends StatefulWidget {
 }
 
 class _AssignmentScreenState extends State<AssignmentScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, PerformanceOptimizedMixin {
   late AnimationController _animationController;
 
-  // Cache for reused colors and styles
-  late final Color _primaryWithAlpha;
-  late final Color _greenBackground = const Color.fromRGBO(76, 175, 80, 0.1);
-  late final Color _orangeBackground = const Color.fromRGBO(255, 152, 0, 0.1);
-  late final Color _green = Colors.green;
-  late final Color _orange = Colors.orange;
-  late final Color _greyBorder = const Color.fromRGBO(158, 158, 158, 0.2);
+  // Search functionality
+  bool _isSearching = false;
+  String _searchQuery = '';
+  final TextEditingController _searchController = TextEditingController();
+
+  // Filter functionality
+  String _selectedFilter = 'All';
+  final List<String> _filterOptions = [
+    'All',
+    'Completed',
+    'Pending',
+    'Due Today',
+    'Overdue',
+  ];
 
   // Cache for animation transitions
   late final Animatable<Offset> _detailsRouteTween = Tween<Offset>(
@@ -54,6 +65,9 @@ class _AssignmentScreenState extends State<AssignmentScreen>
     },
   ];
 
+  // To track if the screen is first loaded
+  bool _isFirstLoad = true;
+
   @override
   void initState() {
     super.initState();
@@ -61,18 +75,17 @@ class _AssignmentScreenState extends State<AssignmentScreen>
       vsync: this,
       duration: const Duration(milliseconds: 300),
     );
-  }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // Initialize theme-dependent colors
-    _primaryWithAlpha = Theme.of(context).colorScheme.primary.withAlpha(26);
+    // Add a small delay to ensure animations run after widget is fully built
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      setState(() => _isFirstLoad = false);
+    });
   }
 
   @override
   void dispose() {
     _animationController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -98,34 +111,68 @@ class _AssignmentScreenState extends State<AssignmentScreen>
   }
 
   Widget _buildEmptyState() {
+    String title;
+    String subtitle;
+    IconData icon;
+
+    if (_assignments.isEmpty) {
+      title = 'No Assignments Yet';
+      subtitle = 'Tap the + button to add assignments';
+      icon = Icons.assignment_outlined;
+    } else if (_searchQuery.isNotEmpty) {
+      title = 'No Results Found';
+      subtitle = 'Try a different search term';
+      icon = Icons.search_off;
+    } else {
+      title = 'No $_selectedFilter Assignments';
+      subtitle = 'Try changing the filter';
+      icon = Icons.filter_list_off;
+    }
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.assignment_outlined, size: 80, color: Colors.grey[400]),
+          Icon(icon, size: 80, color: Colors.grey[400])
+              .animate(target: _isFirstLoad ? 0 : 1)
+              .scale(
+                begin: const Offset(0.8, 0.8),
+                end: const Offset(1.0, 1.0),
+                duration: 600.ms,
+                curve: Curves.elasticOut,
+              ),
           const SizedBox(height: 16),
           Text(
-            'No Assignments Yet',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Colors.grey[600],
-            ),
-          ),
+                title,
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey[600],
+                ),
+              )
+              .animate(target: _isFirstLoad ? 0 : 1)
+              .fadeIn(duration: 600.ms, delay: 200.ms)
+              .slideY(
+                begin: 0.2,
+                end: 0,
+                duration: 600.ms,
+                delay: 200.ms,
+                curve: Curves.easeOutQuad,
+              ),
           const SizedBox(height: 8),
           Text(
-            'Add your first assignment to get started',
-            style: TextStyle(color: Colors.grey[500]),
-          ),
-          const SizedBox(height: 24),
-          ElevatedButton.icon(
-            onPressed: () => _navigateToAddAssignment(),
-            icon: const Icon(Icons.add),
-            label: const Text('Add Assignment'),
-            style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-            ),
-          ),
+                subtitle,
+                style: TextStyle(fontSize: 16, color: Colors.grey[500]),
+              )
+              .animate(target: _isFirstLoad ? 0 : 1)
+              .fadeIn(duration: 600.ms, delay: 400.ms)
+              .slideY(
+                begin: 0.2,
+                end: 0,
+                duration: 600.ms,
+                delay: 400.ms,
+                curve: Curves.easeOutQuad,
+              ),
         ],
       ),
     );
@@ -144,78 +191,54 @@ class _AssignmentScreenState extends State<AssignmentScreen>
 
   Widget _buildAssignmentCard(Map<String, dynamic> assignment, int index) {
     final bool isCompleted = assignment['isCompleted'] ?? false;
-    final Color statusColor = isCompleted ? _green : _orange;
-    final Color statusBackgroundColor =
-        isCompleted ? _greenBackground : _orangeBackground;
-    final TextDecoration titleDecoration =
-        isCompleted ? TextDecoration.lineThrough : TextDecoration.none;
-    final Color titleColor = isCompleted ? Colors.grey : Colors.black87;
+    final String subject = assignment['subject'] ?? 'General';
+    final String dueDate = assignment['dueDate'] ?? '';
+    final String description = assignment['description'] ?? '';
 
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: const BorderRadius.all(Radius.circular(12)),
-        side: BorderSide(color: _greyBorder, width: 1),
+    // Get subject-specific styling
+    final String imageUrl = SubjectUtils.getImageForSubject(subject);
+    final Color subjectColor = SubjectUtils.getColorForSubject(subject);
+    final String formattedDueDate = SubjectUtils.formatDueDate(dueDate);
+
+    // Create subject badge
+    final Widget subjectBadge = Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: SubjectUtils.getTransparentColor(subjectColor, 0.2),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: SubjectUtils.getTransparentColor(subjectColor, 0.5),
+        ),
       ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-        leading: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: statusBackgroundColor,
-            shape: BoxShape.circle,
-          ),
-          child: Icon(
-            isCompleted ? Icons.check_circle : Icons.pending,
-            color: statusColor,
-          ),
+      child: Text(
+        subject,
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+          color: subjectColor,
         ),
-        title: Text(
-          assignment['title'],
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
-            decoration: titleDecoration,
-            color: titleColor,
-          ),
-        ),
-        subtitle: Padding(
-          padding: const EdgeInsets.only(top: 4),
-          child: _buildAssignmentSubtitle(assignment),
-        ),
-        trailing: IconButton(
-          icon: const Icon(Icons.more_vert),
-          onPressed: () => _showOptionsSheet(context, assignment, index),
-        ),
-        onTap: () => _navigateToDetails(context, assignment, index),
       ),
     );
-  }
 
-  Widget _buildAssignmentSubtitle(Map<String, dynamic> assignment) {
-    final theme = Theme.of(context);
-
-    return Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-          decoration: BoxDecoration(
-            color: _primaryWithAlpha,
-            borderRadius: const BorderRadius.all(Radius.circular(4)),
-          ),
-          child: Text(
-            assignment['subject'],
-            style: TextStyle(fontSize: 12, color: theme.colorScheme.primary),
-          ),
-        ),
-        const SizedBox(width: 8),
-        Icon(Icons.calendar_today, size: 12, color: Colors.grey[600]),
-        const SizedBox(width: 4),
-        Text(
-          'Due: ${assignment['dueDate']}',
-          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-        ),
-      ],
+    return CustomCard(
+      title: assignment['title'],
+      subtitle: formattedDueDate,
+      description:
+          description.isNotEmpty
+              ? description.substring(
+                    0,
+                    description.length > 100 ? 100 : description.length,
+                  ) +
+                  (description.length > 100 ? '...' : '')
+              : null,
+      imageUrl: imageUrl,
+      isCompleted: isCompleted,
+      badges: [subjectBadge],
+      onTap: () => _navigateToDetails(context, assignment, index),
+      trailing: IconButton(
+        icon: const Icon(Icons.more_vert),
+        onPressed: () => _showOptionsSheet(context, assignment, index),
+      ),
     );
   }
 
@@ -269,10 +292,7 @@ class _AssignmentScreenState extends State<AssignmentScreen>
           title: const Text('Edit Assignment'),
           onTap: () {
             Navigator.pop(context);
-            // TODO: Implement edit functionality
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Edit functionality coming soon')),
-            );
+            _editAssignment(assignment, index);
           },
         ),
         ListTile(
@@ -347,34 +367,321 @@ class _AssignmentScreenState extends State<AssignmentScreen>
     );
   }
 
+  void _editAssignment(Map<String, dynamic> assignment, int index) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder:
+            (context) => AddAssignmentScreen(
+              onAssignmentAdded:
+                  (updatedAssignment) =>
+                      _updateAssignment(updatedAssignment, index),
+              assignmentToEdit: assignment,
+            ),
+      ),
+    );
+  }
+
+  void _updateAssignment(Map<String, dynamic> updatedAssignment, int index) {
+    setState(() {
+      _assignments[index] = updatedAssignment;
+    });
+  }
+
+  List<Map<String, dynamic>> get _filteredAssignments {
+    List<Map<String, dynamic>> filtered = List.from(_assignments);
+
+    // Apply search filter
+    if (_searchQuery.isNotEmpty) {
+      filtered =
+          filtered.where((assignment) {
+            final title = assignment['title']?.toString().toLowerCase() ?? '';
+            final subject =
+                assignment['subject']?.toString().toLowerCase() ?? '';
+            final description =
+                assignment['description']?.toString().toLowerCase() ?? '';
+            final query = _searchQuery.toLowerCase();
+
+            return title.contains(query) ||
+                subject.contains(query) ||
+                description.contains(query);
+          }).toList();
+    }
+
+    // Apply status filter
+    switch (_selectedFilter) {
+      case 'Completed':
+        filtered =
+            filtered
+                .where((assignment) => assignment['isCompleted'] == true)
+                .toList();
+        break;
+      case 'Pending':
+        filtered =
+            filtered
+                .where((assignment) => assignment['isCompleted'] == false)
+                .toList();
+        break;
+      case 'Due Today':
+        final today = DateTime.now();
+        filtered =
+            filtered.where((assignment) {
+              final dueDate = assignment['dueDate'];
+              if (dueDate != null) {
+                try {
+                  final date = DateTime.parse(dueDate);
+                  return date.year == today.year &&
+                      date.month == today.month &&
+                      date.day == today.day;
+                } catch (e) {
+                  return false;
+                }
+              }
+              return false;
+            }).toList();
+        break;
+      case 'Overdue':
+        final today = DateTime.now();
+        filtered =
+            filtered.where((assignment) {
+              final dueDate = assignment['dueDate'];
+              final isCompleted = assignment['isCompleted'] ?? false;
+              if (dueDate != null && !isCompleted) {
+                try {
+                  final date = DateTime.parse(dueDate);
+                  return date.isBefore(today);
+                } catch (e) {
+                  return false;
+                }
+              }
+              return false;
+            }).toList();
+        break;
+    }
+
+    return filtered;
+  }
+
+  void _toggleSearch() {
+    setState(() {
+      _isSearching = !_isSearching;
+      if (!_isSearching) {
+        _searchController.clear();
+        _searchQuery = '';
+      }
+    });
+  }
+
+  void _showFilterDialog() {
+    // Calculate counts for each filter
+    final Map<String, int> filterCounts = {
+      'All': _assignments.length,
+      'Completed': _assignments.where((a) => a['isCompleted'] == true).length,
+      'Pending': _assignments.where((a) => a['isCompleted'] == false).length,
+      'Due Today': _getDueTodayCount(),
+      'Overdue': _getOverdueCount(),
+    };
+
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Filter Assignments'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children:
+                  _filterOptions.map((filter) {
+                    final count = filterCounts[filter] ?? 0;
+                    return RadioListTile<String>(
+                      title: Row(
+                        children: [
+                          Expanded(child: Text(filter)),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color:
+                                  Theme.of(
+                                    context,
+                                  ).colorScheme.primaryContainer,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              count.toString(),
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color:
+                                    Theme.of(
+                                      context,
+                                    ).colorScheme.onPrimaryContainer,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      value: filter,
+                      groupValue: _selectedFilter,
+                      onChanged: (value) {
+                        setState(() {
+                          _selectedFilter = value!;
+                        });
+                        Navigator.pop(context);
+                      },
+                    );
+                  }).toList(),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+            ],
+          ),
+    );
+  }
+
+  int _getDueTodayCount() {
+    final today = DateTime.now();
+    return _assignments.where((assignment) {
+      final dueDate = assignment['dueDate'];
+      if (dueDate != null) {
+        try {
+          final date = DateTime.parse(dueDate);
+          return date.year == today.year &&
+              date.month == today.month &&
+              date.day == today.day;
+        } catch (e) {
+          return false;
+        }
+      }
+      return false;
+    }).length;
+  }
+
+  int _getOverdueCount() {
+    final today = DateTime.now();
+    return _assignments.where((assignment) {
+      final dueDate = assignment['dueDate'];
+      final isCompleted = assignment['isCompleted'] ?? false;
+      if (dueDate != null && !isCompleted) {
+        try {
+          final date = DateTime.parse(dueDate);
+          return date.isBefore(today);
+        } catch (e) {
+          return false;
+        }
+      }
+      return false;
+    }).length;
+  }
+
+  Widget _buildSearchField() {
+    return TextField(
+      controller: _searchController,
+      style: TextStyle(
+        color: Theme.of(context).colorScheme.onSurface,
+        fontSize: 16,
+      ),
+      decoration: InputDecoration(
+        hintText: 'Search assignments...',
+        hintStyle: TextStyle(
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+        ),
+        border: InputBorder.none,
+      ),
+      onChanged: (value) {
+        setState(() {
+          _searchQuery = value;
+        });
+      },
+      autofocus: true,
+    );
+  }
+
+  Widget _buildActiveFiltersBar() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        children: [
+          if (_selectedFilter != 'All') ...[
+            Chip(
+              label: Text(_selectedFilter),
+              onDeleted: () {
+                setState(() {
+                  _selectedFilter = 'All';
+                });
+              },
+              deleteIcon: const Icon(Icons.close, size: 16),
+              backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+            ),
+            const SizedBox(width: 8),
+          ],
+          if (_searchQuery.isNotEmpty) ...[
+            Chip(
+              label: Text('Search: "$_searchQuery"'),
+              onDeleted: () {
+                setState(() {
+                  _searchController.clear();
+                  _searchQuery = '';
+                });
+              },
+              deleteIcon: const Icon(Icons.close, size: 16),
+              backgroundColor: Theme.of(context).colorScheme.secondaryContainer,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Assignments'),
+        title: _isSearching ? _buildSearchField() : const Text('Assignments'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        bottom:
+            _selectedFilter != 'All' || _searchQuery.isNotEmpty
+                ? PreferredSize(
+                  preferredSize: const Size.fromHeight(40),
+                  child: _buildActiveFiltersBar(),
+                )
+                : null,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.filter_list),
-            onPressed: () {
-              // TODO: Implement filtering functionality
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Filtering coming soon')),
-              );
-            },
+          Stack(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.filter_list),
+                onPressed: _showFilterDialog,
+              ),
+              if (_selectedFilter != 'All')
+                Positioned(
+                  right: 8,
+                  top: 8,
+                  child: Container(
+                    width: 12,
+                    height: 12,
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primary,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+            ],
           ),
           IconButton(
-            icon: const Icon(Icons.search),
-            onPressed: () {
-              // TODO: Implement search functionality
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Search coming soon')),
-              );
-            },
+            icon: Icon(_isSearching ? Icons.close : Icons.search),
+            onPressed: _toggleSearch,
           ),
         ],
       ),
-      body: _assignments.isEmpty ? _buildEmptyState() : _buildAssignmentsList(),
+      body:
+          _filteredAssignments.isEmpty
+              ? _buildEmptyState()
+              : _buildAssignmentsList(),
       floatingActionButton: FloatingActionButton(
         onPressed: _navigateToAddAssignment,
         child: const Icon(Icons.add),
@@ -383,39 +690,33 @@ class _AssignmentScreenState extends State<AssignmentScreen>
   }
 
   Widget _buildAssignmentsList() {
+    final filteredAssignments = _filteredAssignments;
     return ListView.builder(
-      itemCount: _assignments.length,
+      itemCount: filteredAssignments.length,
+      padding: const EdgeInsets.only(bottom: 80), // Space for FAB
+      physics: const BouncingScrollPhysics(), // Better iOS-style scrolling
       itemBuilder: (context, index) {
-        final assignment = _assignments[index];
-        return _buildAnimatedListItem(assignment, index);
+        final assignment = filteredAssignments[index];
+        final originalIndex = _assignments.indexOf(assignment);
+        return _buildOptimizedListItem(assignment, originalIndex);
       },
     );
   }
 
-  Widget _buildAnimatedListItem(Map<String, dynamic> assignment, int index) {
-    return AnimatedBuilder(
-      animation: _animationController,
-      builder: (context, child) {
-        return TweenAnimationBuilder<double>(
-          tween: Tween<double>(begin: 0.0, end: 1.0),
-          duration: Duration(milliseconds: 500 + (index * 100)),
-          curve: Curves.easeOutQuad,
-          builder: (context, value, child) {
-            return FadeTransition(
-              opacity: Animation<double>.fromValueListenable(
-                ValueNotifier<double>(value),
-              ),
-              child: SlideTransition(
-                position: Animation<Offset>.fromValueListenable(
-                  ValueNotifier<Offset>(Offset(0, 1 - value)),
-                ),
-                child: child,
-              ),
-            );
-          },
-          child: _buildAssignmentCard(assignment, index),
-        );
-      },
+  Widget _buildOptimizedListItem(Map<String, dynamic> assignment, int index) {
+    // Use more efficient AnimatedContainer instead of TweenAnimationBuilder
+    return AnimatedContainer(
+      duration: Duration(milliseconds: 300 + (index * 50)),
+      curve: Curves.easeOutQuad,
+      transform:
+          _isFirstLoad
+              ? (Matrix4.identity()..translate(0.0, 20.0, 0.0))
+              : Matrix4.identity(),
+      child: AnimatedOpacity(
+        duration: Duration(milliseconds: 300 + (index * 50)),
+        opacity: _isFirstLoad ? 0.0 : 1.0,
+        child: _buildAssignmentCard(assignment, index),
+      ),
     );
   }
 }
