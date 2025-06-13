@@ -935,7 +935,7 @@ class FirebaseService {
       if (doc.exists && doc.data() != null) {
         return UserProfile.fromFirestore(doc);
       }
-      
+
       // If no profile exists, create a default one from auth data
       final user = currentUser;
       if (user != null) {
@@ -949,7 +949,7 @@ class FirebaseService {
         await _updateUserProfileDocument(defaultProfile);
         return defaultProfile;
       }
-      
+
       return null;
     } catch (e) {
       ErrorUtils.handleError(e, context: 'Get user profile');
@@ -1004,7 +1004,9 @@ class FirebaseService {
     }
   }
 
-  static Future<Map<String, dynamic>> getUserAcademicStats([String? userId]) async {
+  static Future<Map<String, dynamic>> getUserAcademicStats([
+    String? userId,
+  ]) async {
     try {
       final uid = userId ?? currentUser?.uid;
       if (uid == null) return {};
@@ -1018,22 +1020,26 @@ class FirebaseService {
           'currentGPA': 4.2,
           'totalCredits': 48,
           'totalAssignments': _mockAssignments.length,
-          'completedAssignments': _mockAssignments.where((a) => a['isCompleted'] == true).length,
-          'pendingAssignments': _mockAssignments.where((a) => a['isCompleted'] == false).length,
+          'completedAssignments':
+              _mockAssignments.where((a) => a['isCompleted'] == true).length,
+          'pendingAssignments':
+              _mockAssignments.where((a) => a['isCompleted'] == false).length,
         };
       }
 
       // Get user assignments for real calculations
       final assignments = await getUserAssignments();
       final profile = await getUserProfile(uid);
-      
+
       final stats = profile?.getAcademicStats() ?? {};
-      
+
       // Add assignment-based stats
       stats['totalAssignments'] = assignments.length;
-      stats['completedAssignments'] = assignments.where((a) => a.isCompleted).length;
-      stats['pendingAssignments'] = assignments.where((a) => !a.isCompleted).length;
-      
+      stats['completedAssignments'] =
+          assignments.where((a) => a.isCompleted).length;
+      stats['pendingAssignments'] =
+          assignments.where((a) => !a.isCompleted).length;
+
       return stats;
     } catch (e) {
       ErrorUtils.handleError(e, context: 'Get academic stats');
@@ -1043,15 +1049,21 @@ class FirebaseService {
 
   static int _calculateProfileCompleteness(UserProfile profile) {
     int completeness = 0;
-    
+
     if (profile.name.isNotEmpty) completeness += 20;
-    if (profile.phoneNumber != null && profile.phoneNumber!.isNotEmpty) completeness += 15;
+    if (profile.phoneNumber != null && profile.phoneNumber!.isNotEmpty) {
+      completeness += 15;
+    }
     if (profile.dateOfBirth != null) completeness += 10;
-    if (profile.address != null && profile.address!.isNotEmpty) completeness += 10;
+    if (profile.address != null && profile.address!.isNotEmpty) {
+      completeness += 10;
+    }
     if (profile.grade != null) completeness += 15;
     if (profile.major != null) completeness += 15;
-    if (profile.studentId != null && profile.studentId!.isNotEmpty) completeness += 15;
-    
+    if (profile.studentId != null && profile.studentId!.isNotEmpty) {
+      completeness += 15;
+    }
+
     return completeness;
   }
 }

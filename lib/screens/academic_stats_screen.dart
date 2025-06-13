@@ -13,24 +13,24 @@ class _AcademicStatsScreenState extends State<AcademicStatsScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
-  
+
   Map<String, dynamic> _academicStats = {};
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    
+
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 600),
     );
-    
+
     _fadeAnimation = CurvedAnimation(
       parent: _animationController,
       curve: Curves.easeInOut,
     );
-    
+
     _loadAcademicStats();
     _animationController.forward();
   }
@@ -74,45 +74,46 @@ class _AcademicStatsScreenState extends State<AcademicStatsScreen>
         title: const Text('Academic Statistics'),
         backgroundColor: theme.colorScheme.inversePrimary,
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator(
-              onRefresh: _loadAcademicStats,
-              child: FadeTransition(
-                opacity: _fadeAnimation,
-                child: SingleChildScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Overall Performance Card
-                      _buildOverallPerformanceCard(theme),
-                      const SizedBox(height: 24),
+      body:
+          _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : RefreshIndicator(
+                onRefresh: _loadAcademicStats,
+                child: FadeTransition(
+                  opacity: _fadeAnimation,
+                  child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Overall Performance Card
+                        _buildOverallPerformanceCard(theme),
+                        const SizedBox(height: 24),
 
-                      // Course Statistics
-                      _buildCourseStatisticsCard(theme),
-                      const SizedBox(height: 24),
+                        // Course Statistics
+                        _buildCourseStatisticsCard(theme),
+                        const SizedBox(height: 24),
 
-                      // Assignment Statistics
-                      _buildAssignmentStatisticsCard(theme),
-                      const SizedBox(height: 24),
+                        // Assignment Statistics
+                        _buildAssignmentStatisticsCard(theme),
+                        const SizedBox(height: 24),
 
-                      // Attendance & Progress
-                      _buildAttendanceProgressCard(theme),
-                      const SizedBox(height: 24),
-                    ],
+                        // Attendance & Progress
+                        _buildAttendanceProgressCard(theme),
+                        const SizedBox(height: 24),
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
     );
   }
 
   Widget _buildOverallPerformanceCard(ThemeData theme) {
     final gpa = _academicStats['currentGPA']?.toDouble() ?? 0.0;
     final attendanceRate = _academicStats['attendanceRate']?.toDouble() ?? 0.0;
-    
+
     return ModernCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -166,18 +167,14 @@ class _AcademicStatsScreenState extends State<AcademicStatsScreen>
     final totalCourses = _academicStats['totalCourses'] ?? 0;
     final completedCourses = _academicStats['completedCourses'] ?? 0;
     final totalCredits = _academicStats['totalCredits'] ?? 0;
-    
+
     return ModernCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(
-                Icons.menu_book,
-                color: theme.colorScheme.primary,
-                size: 24,
-              ),
+              Icon(Icons.menu_book, color: theme.colorScheme.primary, size: 24),
               const SizedBox(width: 8),
               Text(
                 'Course Statistics',
@@ -228,10 +225,11 @@ class _AcademicStatsScreenState extends State<AcademicStatsScreen>
     final totalAssignments = _academicStats['totalAssignments'] ?? 0;
     final completedAssignments = _academicStats['completedAssignments'] ?? 0;
     final pendingAssignments = _academicStats['pendingAssignments'] ?? 0;
-    final completionRate = totalAssignments > 0 
-        ? (completedAssignments / totalAssignments * 100) 
-        : 0.0;
-    
+    final completionRate =
+        totalAssignments > 0
+            ? (completedAssignments / totalAssignments * 100)
+            : 0.0;
+
     return ModernCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -307,18 +305,14 @@ class _AcademicStatsScreenState extends State<AcademicStatsScreen>
 
   Widget _buildAttendanceProgressCard(ThemeData theme) {
     final attendanceRate = _academicStats['attendanceRate']?.toDouble() ?? 0.0;
-    
+
     return ModernCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(
-                Icons.timeline,
-                color: theme.colorScheme.primary,
-                size: 24,
-              ),
+              Icon(Icons.timeline, color: theme.colorScheme.primary, size: 24),
               const SizedBox(width: 8),
               Text(
                 'Attendance & Progress',
@@ -370,7 +364,7 @@ class _AcademicStatsScreenState extends State<AcademicStatsScreen>
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceVariant.withOpacity(0.3),
+              color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Row(
@@ -403,16 +397,13 @@ class _AcademicStatsScreenState extends State<AcademicStatsScreen>
     Color color,
   ) {
     final theme = Theme.of(context);
-    
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: color.withOpacity(0.3),
-          width: 1,
-        ),
+        border: Border.all(color: color.withOpacity(0.3), width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
