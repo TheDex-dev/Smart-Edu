@@ -49,6 +49,17 @@ dependencies:
   # For caching network images
   cached_network_image: ^3.3.1
   
+  # Firebase dependencies
+  firebase_core: ^3.6.0
+  firebase_auth: ^5.3.1
+  cloud_firestore: ^5.4.3
+  firebase_analytics: ^11.3.3
+  firebase_crashlytics: ^4.3.7
+  firebase_messaging: ^15.2.7
+  firebase_performance: ^0.10.1+7
+  firebase_storage: ^12.4.7
+  google_sign_in: ^6.2.1
+  
   # UI enhancements
   google_fonts: ^6.1.0
   flutter_staggered_animations: ^1.1.1

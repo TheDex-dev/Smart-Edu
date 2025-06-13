@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import '../services/firebase_service.dart';
 
 class AddAssignmentScreen extends StatefulWidget {
   final Function(Map<String, dynamic>) onAssignmentAdded;
@@ -150,6 +151,12 @@ class _AddAssignmentScreenState extends State<AddAssignmentScreen>
       _animationController.reverse().then((_) {
         widget.onAssignmentAdded(assignment);
         Navigator.pop(context);
+
+        // Log analytics event
+        FirebaseService.logEvent('assignment_created', {
+          'subject': assignment['subject'],
+          'has_description': assignment['description'].isNotEmpty,
+        });
       });
     }
   }

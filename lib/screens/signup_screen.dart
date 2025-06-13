@@ -1,25 +1,26 @@
-// filepath: /home/stolas/AndroidStudioProjects/smart_edu/lib/screens/login_screen.dart
 import 'package:flutter/material.dart';
 import '../models/auth.dart';
 import '../main.dart';
 import '../widgets/modern_components.dart';
 import '../services/firebase_service.dart';
-import 'signup_screen.dart';
 
-class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+class SignUpScreen extends StatefulWidget {
+  const SignUpScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  State<SignUpScreen> createState() => _SignUpScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen>
+class _SignUpScreenState extends State<SignUpScreen>
     with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
+  final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
   bool _isLoading = false;
   bool _isPasswordVisible = false;
+  bool _isConfirmPasswordVisible = false;
 
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
@@ -45,33 +46,33 @@ class _LoginScreenState extends State<LoginScreen>
       CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
     );
 
-    // Start the animation when the screen loads
     _animationController.forward();
   }
 
   @override
   void dispose() {
+    _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
+    _confirmPasswordController.dispose();
     _animationController.dispose();
     super.dispose();
   }
 
-  Future<void> _login() async {
+  Future<void> _signUp() async {
     if (_formKey.currentState!.validate()) {
       setState(() {
         _isLoading = true;
       });
 
       try {
-        // Attempt Firebase login
-        final success = await Auth.login(
+        final success = await Auth.register(
           _emailController.text,
           _passwordController.text,
+          _nameController.text,
         );
 
         if (success && mounted) {
-          // Log screen view
           await FirebaseService.logScreenView('main_screen');
 
           if (mounted) {
@@ -82,7 +83,7 @@ class _LoginScreenState extends State<LoginScreen>
         } else if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Invalid email or password'),
+              content: Text('Sign up failed'),
               backgroundColor: Colors.red,
             ),
           );
@@ -91,7 +92,7 @@ class _LoginScreenState extends State<LoginScreen>
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Login failed: ${e.toString()}'),
+              content: Text('Sign up failed: ${e.toString()}'),
               backgroundColor: Colors.red,
             ),
           );
@@ -115,7 +116,6 @@ class _LoginScreenState extends State<LoginScreen>
       final success = await Auth.signInWithGoogle();
 
       if (success && mounted) {
-        // Log screen view
         await FirebaseService.logScreenView('main_screen');
 
         if (mounted) {
@@ -179,7 +179,7 @@ class _LoginScreenState extends State<LoginScreen>
         ),
         const SizedBox(height: 24),
         Text(
-          'Smart Edu',
+          'Create Account',
           textAlign: TextAlign.center,
           style: theme.textTheme.headlineLarge?.copyWith(
             fontWeight: FontWeight.bold,
@@ -188,13 +188,59 @@ class _LoginScreenState extends State<LoginScreen>
         ),
         const SizedBox(height: 8),
         Text(
-          'Welcome back! Please sign in to continue.',
+          'Join Smart Edu to manage your academic life.',
           textAlign: TextAlign.center,
           style: theme.textTheme.bodyMedium?.copyWith(
             color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildNameField(ThemeData theme) {
+    return TextFormField(
+      controller: _nameController,
+      style: theme.textTheme.bodyLarge,
+      decoration: InputDecoration(
+        labelText: 'Full Name',
+        hintText: 'Enter your full name',
+        prefixIcon: Container(
+          margin: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.primary.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(
+            Icons.person_outlined,
+            color: theme.colorScheme.primary,
+            size: 20,
+          ),
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(
+            color: theme.colorScheme.outline.withValues(alpha: 0.3),
+          ),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: theme.colorScheme.primary, width: 2),
+        ),
+        filled: true,
+        fillColor: theme.colorScheme.surface,
+      ),
+      textCapitalization: TextCapitalization.words,
+      validator: (value) {
+        if (value == null || value.isEmpty) {
+          return 'Please enter your full name';
+        }
+        if (value.trim().length < 2) {
+          return 'Name must be at least 2 characters';
+        }
+        return null;
+      },
     );
   }
 
@@ -236,7 +282,7 @@ class _LoginScreenState extends State<LoginScreen>
         if (value == null || value.isEmpty) {
           return 'Please enter your email';
         }
-        if (!value.contains('@')) {
+        if (!value.contains('@') || !value.contains('.')) {
           return 'Please enter a valid email';
         }
         return null;
@@ -301,43 +347,70 @@ class _LoginScreenState extends State<LoginScreen>
     );
   }
 
-  Widget _buildLoginButton(ThemeData theme) {
-    return ModernButton(
-      text: 'Login',
-      onPressed: _isLoading ? null : _login,
-      isLoading: _isLoading,
-      icon: Icons.login,
-      padding: const EdgeInsets.symmetric(vertical: 16),
+  Widget _buildConfirmPasswordField(ThemeData theme) {
+    return TextFormField(
+      controller: _confirmPasswordController,
+      style: theme.textTheme.bodyLarge,
+      obscureText: !_isConfirmPasswordVisible,
+      decoration: InputDecoration(
+        labelText: 'Confirm Password',
+        hintText: 'Confirm your password',
+        prefixIcon: Container(
+          margin: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.primary.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(
+            Icons.lock_outlined,
+            color: theme.colorScheme.primary,
+            size: 20,
+          ),
+        ),
+        suffixIcon: IconButton(
+          icon: Icon(
+            _isConfirmPasswordVisible ? Icons.visibility_off : Icons.visibility,
+            color: theme.colorScheme.primary,
+          ),
+          onPressed: () {
+            setState(() {
+              _isConfirmPasswordVisible = !_isConfirmPasswordVisible;
+            });
+          },
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(
+            color: theme.colorScheme.outline.withValues(alpha: 0.3),
+          ),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: theme.colorScheme.primary, width: 2),
+        ),
+        filled: true,
+        fillColor: theme.colorScheme.surface,
+      ),
+      validator: (value) {
+        if (value == null || value.isEmpty) {
+          return 'Please confirm your password';
+        }
+        if (value != _passwordController.text) {
+          return 'Passwords do not match';
+        }
+        return null;
+      },
     );
   }
 
-  Widget _buildSignUpLink(ThemeData theme) {
-    return TextButton(
-      onPressed: () {
-        Navigator.of(
-          context,
-        ).push(MaterialPageRoute(builder: (context) => const SignUpScreen()));
-      },
-      style: TextButton.styleFrom(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-      ),
-      child: RichText(
-        text: TextSpan(
-          text: "Don't have an account? ",
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-          ),
-          children: [
-            TextSpan(
-              text: 'Sign up',
-              style: TextStyle(
-                color: theme.colorScheme.primary,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
-      ),
+  Widget _buildSignUpButton(ThemeData theme) {
+    return ModernButton(
+      text: 'Create Account',
+      onPressed: _isLoading ? null : _signUp,
+      isLoading: _isLoading,
+      icon: Icons.person_add,
+      padding: const EdgeInsets.symmetric(vertical: 16),
     );
   }
 
@@ -406,6 +479,34 @@ class _LoginScreenState extends State<LoginScreen>
     );
   }
 
+  Widget _buildSignInLink(ThemeData theme) {
+    return TextButton(
+      onPressed: () {
+        Navigator.of(context).pop();
+      },
+      style: TextButton.styleFrom(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+      ),
+      child: RichText(
+        text: TextSpan(
+          text: "Already have an account? ",
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+          ),
+          children: [
+            TextSpan(
+              text: 'Sign in',
+              style: TextStyle(
+                color: theme.colorScheme.primary,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -441,19 +542,7 @@ class _LoginScreenState extends State<LoginScreen>
                         children: [
                           // Logo and title
                           _buildHeaderSection(theme),
-                          const SizedBox(height: 48),
-
-                          // Email field
-                          _buildEmailField(theme),
-                          const SizedBox(height: 20),
-
-                          // Password field
-                          _buildPasswordField(theme),
                           const SizedBox(height: 32),
-
-                          // Login button
-                          _buildLoginButton(theme),
-                          const SizedBox(height: 20),
 
                           // Google Sign In button
                           _buildGoogleSignInButton(theme),
@@ -463,8 +552,28 @@ class _LoginScreenState extends State<LoginScreen>
                           _buildDivider(theme),
                           const SizedBox(height: 20),
 
-                          // Sign up link
-                          _buildSignUpLink(theme),
+                          // Name field
+                          _buildNameField(theme),
+                          const SizedBox(height: 16),
+
+                          // Email field
+                          _buildEmailField(theme),
+                          const SizedBox(height: 16),
+
+                          // Password field
+                          _buildPasswordField(theme),
+                          const SizedBox(height: 16),
+
+                          // Confirm Password field
+                          _buildConfirmPasswordField(theme),
+                          const SizedBox(height: 32),
+
+                          // Sign Up button
+                          _buildSignUpButton(theme),
+                          const SizedBox(height: 20),
+
+                          // Sign in link
+                          _buildSignInLink(theme),
                         ],
                       ),
                     ),

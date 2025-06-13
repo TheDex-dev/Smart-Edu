@@ -1,53 +1,75 @@
-class Auth {
-  static bool _isLoggedIn = false;
-  static String? _userEmail;
-  static String? _userName;
+import 'package:firebase_auth/firebase_auth.dart';
+import '../services/firebase_service.dart';
 
+class Auth {
   // Check if user is logged in
-  static bool get isLoggedIn => _isLoggedIn;
+  static bool get isLoggedIn => FirebaseService.isSignedIn;
+
+  // Get current user
+  static User? get currentUser => FirebaseService.currentUser;
 
   // Get user email
-  static String? get userEmail => _userEmail;
+  static String? get userEmail => FirebaseService.currentUser?.email;
 
   // Get user name
-  static String? get userName => _userName;
+  static String? get userName => FirebaseService.currentUser?.displayName;
 
-  // Login method (mock implementation)
+  // Auth state changes stream
+  static Stream<User?> get authStateChanges => FirebaseService.authStateChanges;
+
+  // Login method using Firebase
   static Future<bool> login(String email, String password) async {
-    // For demo purposes, accept any valid-looking email with password length >= 6
-    if (email.contains('@') && password.length >= 6) {
-      _isLoggedIn = true;
-      _userEmail = email;
-      _userName = _generateNameFromEmail(email);
-      return true;
+    try {
+      final credential = await FirebaseService.signInWithEmailPassword(
+        email,
+        password,
+      );
+      return credential != null;
+    } catch (e) {
+      return false;
     }
-    return false;
+  }
+
+  // Google Sign In
+  static Future<bool> signInWithGoogle() async {
+    try {
+      final credential = await FirebaseService.signInWithGoogle();
+      return credential != null;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // Register method using Firebase
+  static Future<bool> register(
+    String email,
+    String password,
+    String displayName,
+  ) async {
+    try {
+      final credential = await FirebaseService.registerWithEmailPassword(
+        email,
+        password,
+        displayName,
+      );
+      return credential != null;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // Reset password
+  static Future<bool> resetPassword(String email) async {
+    try {
+      await FirebaseService.resetPassword(email);
+      return true;
+    } catch (e) {
+      return false;
+    }
   }
 
   // Logout method
-  static void logout() {
-    _isLoggedIn = false;
-    _userEmail = null;
-    _userName = null;
-  }
-
-  // Generate a name from email (for demo purposes)
-  static String _generateNameFromEmail(String email) {
-    if (email.isEmpty) return '';
-    final parts = email.split('@');
-    if (parts.isEmpty) return '';
-
-    String name = parts[0];
-    // Capitalize first letter of each part and replace dots/underscores with spaces
-    name = name.replaceAll('.', ' ').replaceAll('_', ' ');
-
-    // Capitalize each word
-    final words = name.split(' ');
-    final capitalizedWords = words.map((word) {
-      if (word.isEmpty) return '';
-      return word[0].toUpperCase() + word.substring(1);
-    });
-
-    return capitalizedWords.join(' ');
+  static Future<void> logout() async {
+    await FirebaseService.signOut();
   }
 }

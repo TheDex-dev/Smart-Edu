@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "387403274966",
+    "project_id": "smartedu-48462",
+    "storage_bucket": "smartedu-48462.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:387403274966:android:a16bfbc1b3b911be3c0777",
+        "android_client_info": {
+          "package_name": "com.ush.smaredu"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAjnXWs88nJmmRiSJZvUIM7KiFDyss8ea8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:387403274966:android:81639752ff4d91d13c0777",
+        "android_client_info": {
+          "package_name": "com.ush.smart_edu"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAjnXWs88nJmmRiSJZvUIM7KiFDyss8ea8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

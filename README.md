@@ -91,6 +91,60 @@ This project is built with Flutter and Dart. To run SmartEdu on your local machi
 - **Luqman** – Database Design & Local Storage
 - **Amri** – Testing & Quality Assurance
 
+## Firebase Configuration
+
+Smart Edu uses Firebase as its backend service. The following Firebase services are configured:
+
+### Firebase Authentication
+- Email/Password authentication
+- Google Sign-In
+- User profile management
+
+### Cloud Firestore
+- NoSQL database for storing user data and assignments
+- Real-time updates for assignment status
+- Offline persistence for data access without internet
+
+### Firebase Analytics
+- Track user engagement and app usage
+- Monitor feature popularity
+- Analyze user behavior
+
+### Firebase Crashlytics
+- Real-time crash reporting
+- Error tracking and analysis
+- Stability monitoring
+
+### Firebase Cloud Messaging
+- Push notifications for assignment deadlines
+- Important updates and reminders
+- In-app messaging
+
+### Firebase Performance Monitoring
+- Track app performance metrics
+- Monitor network requests
+- Identify performance bottlenecks
+
+### Firebase Storage
+- Store and retrieve user files and assignment attachments
+- Secure file access with authentication
+- Efficient file management
+
+## Setting Up Firebase
+
+To set up Firebase for your own instance of Smart Edu:
+
+1. Create a new Firebase project at [firebase.google.com](https://firebase.google.com)
+2. Add Android and iOS apps to your Firebase project
+3. Download and place the configuration files:
+   - `google-services.json` in `android/app/`
+   - `GoogleService-Info.plist` in `ios/Runner/`
+4. Update the `firebase_options.dart` file with your project's configuration
+5. Deploy Firestore security rules using `firebase deploy --only firestore:rules`
+6. Deploy Storage security rules using `firebase deploy --only storage:rules`
+
+For more detailed instructions, refer to the [Firebase documentation](https://firebase.google.com/docs/flutter/setup).
+
 ---
 
 *SmartEdu © 2025 College Project*

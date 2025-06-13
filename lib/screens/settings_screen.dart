@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../models/auth.dart';
 import 'login_screen.dart';
+import '../widgets/modern_components.dart';
+import '../main.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -24,153 +27,61 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Settings'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        backgroundColor: Colors.transparent,
+        foregroundColor: theme.colorScheme.onSurface,
+        elevation: 0,
       ),
-      body: ListView(
-        children: [
-          // Appearance section
-          _buildSectionHeader('Appearance'),
-          SwitchListTile(
-            title: const Text('Dark Mode'),
-            subtitle: const Text('Toggle dark theme'),
-            value: _darkMode,
-            onChanged: (value) {
-              setState(() {
-                _darkMode = value;
-                // In a real app, you would apply the theme change
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Theme change will be implemented soon'),
-                    duration: Duration(seconds: 2),
-                  ),
-                );
-              });
-            },
-          ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Appearance section
+            _buildSectionHeader(theme, 'Appearance'),
+            const SizedBox(height: 16),
+            _buildAppearanceCard(theme),
+            const SizedBox(height: 32),
 
-          // Notifications section
-          _buildSectionHeader('Notifications'),
-          SwitchListTile(
-            title: const Text('Enable Notifications'),
-            subtitle: const Text('Get notified about assignment deadlines'),
-            value: _notifications,
-            onChanged: (value) {
-              setState(() {
-                _notifications = value;
-              });
-            },
-          ),
+            // Notifications section
+            _buildSectionHeader(theme, 'Notifications'),
+            const SizedBox(height: 16),
+            _buildNotificationCard(theme),
+            const SizedBox(height: 32),
 
-          // Language section
-          _buildSectionHeader('Language'),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: DropdownButtonFormField<String>(
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.onSurface,
-                fontSize: 16,
-              ),
-              decoration: const InputDecoration(
-                labelText: 'Select Language',
-                border: OutlineInputBorder(),
-              ),
-              value: _selectedLanguage,
-              items:
-                  _languages.map((String language) {
-                    return DropdownMenuItem<String>(
-                      value: language,
-                      child: Text(language),
-                    );
-                  }).toList(),
-              onChanged: (newValue) {
-                if (newValue != null) {
-                  setState(() {
-                    _selectedLanguage = newValue;
-                  });
-                }
-              },
-            ),
-          ),
-          const SizedBox(height: 16),
+            // Language section
+            _buildSectionHeader(theme, 'Language'),
+            const SizedBox(height: 16),
+            _buildLanguageCard(theme),
+            const SizedBox(height: 32),
 
-          // Account section
-          _buildSectionHeader('Account'),
-          ListTile(
-            leading: const Icon(Icons.person),
-            title: const Text('Edit Profile'),
-            onTap: () {
-              // Navigate to profile edit screen
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Profile editing will be implemented soon'),
-                  duration: Duration(seconds: 2),
-                ),
-              );
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.password),
-            title: const Text('Change Password'),
-            onTap: () {
-              // Navigate to change password screen
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Password change will be implemented soon'),
-                  duration: Duration(seconds: 2),
-                ),
-              );
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.logout, color: Colors.red),
-            title: const Text('Logout', style: TextStyle(color: Colors.red)),
-            onTap: () {
-              _showLogoutConfirmation(context);
-            },
-          ),
+            // Account section
+            _buildSectionHeader(theme, 'Account'),
+            const SizedBox(height: 16),
+            _buildAccountCard(theme),
+            const SizedBox(height: 32),
 
-          // About section
-          _buildSectionHeader('About'),
-          ListTile(
-            leading: const Icon(Icons.info_outline),
-            title: const Text('App Version'),
-            subtitle: const Text('1.0.0'),
-            onTap: () {
-              // Show version info or changelog
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.help_outline),
-            title: const Text('Help & Support'),
-            onTap: () {
-              // Navigate to help screen
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Help section will be implemented soon'),
-                  duration: Duration(seconds: 2),
-                ),
-              );
-            },
-          ),
-          const SizedBox(height: 32),
-        ],
+            // About section
+            _buildSectionHeader(theme, 'About'),
+            const SizedBox(height: 16),
+            _buildAboutCard(theme),
+            const SizedBox(height: 32),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildSectionHeader(String title) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
-      child: Text(
-        title,
-        style: TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.bold,
-          color: Colors.deepPurple[700],
-        ),
+  Widget _buildSectionHeader(ThemeData theme, String title) {
+    return Text(
+      title,
+      style: theme.textTheme.titleLarge?.copyWith(
+        fontWeight: FontWeight.bold,
+        color: theme.colorScheme.primary,
       ),
     );
   }
@@ -208,6 +119,336 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ],
           ),
+    );
+  }
+
+  Widget _buildAppearanceCard(ThemeData theme) {
+    return ModernCard(
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  Icons.palette_outlined,
+                  color: theme.colorScheme.primary,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Dark Mode',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Toggle dark theme appearance',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurface.withValues(
+                          alpha: 0.6,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Switch(
+                value: _darkMode,
+                onChanged: (value) {
+                  setState(() {
+                    _darkMode = value;
+                  });
+                  // Get theme provider to actually toggle theme
+                  final themeProvider = Provider.of<ThemeProvider>(
+                    context,
+                    listen: false,
+                  );
+                  themeProvider.toggleTheme();
+                },
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNotificationCard(ThemeData theme) {
+    return ModernCard(
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              Icons.notifications_outlined,
+              color: theme.colorScheme.primary,
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Enable Notifications',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Get notified about assignment deadlines',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Switch(
+            value: _notifications,
+            onChanged: (value) {
+              setState(() {
+                _notifications = value;
+              });
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLanguageCard(ThemeData theme) {
+    return ModernCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  Icons.language_outlined,
+                  color: theme.colorScheme.primary,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Text(
+                  'Language',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          DropdownButtonFormField<String>(
+            style: theme.textTheme.bodyLarge,
+            decoration: InputDecoration(
+              labelText: 'Select Language',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              filled: true,
+              fillColor: theme.colorScheme.surface,
+            ),
+            value: _selectedLanguage,
+            items:
+                _languages.map((String language) {
+                  return DropdownMenuItem<String>(
+                    value: language,
+                    child: Text(language),
+                  );
+                }).toList(),
+            onChanged: (newValue) {
+              if (newValue != null) {
+                setState(() {
+                  _selectedLanguage = newValue;
+                });
+              }
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAccountCard(ThemeData theme) {
+    return ModernCard(
+      child: Column(
+        children: [
+          _buildSettingsItem(
+            theme,
+            Icons.person_outline,
+            'Edit Profile',
+            'Update your personal information',
+            () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: const Text(
+                    'Profile editing will be implemented soon',
+                  ),
+                  backgroundColor: theme.colorScheme.primary,
+                  behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              );
+            },
+          ),
+          const Divider(height: 1),
+          _buildSettingsItem(
+            theme,
+            Icons.password_outlined,
+            'Change Password',
+            'Update your account password',
+            () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: const Text(
+                    'Password change will be implemented soon',
+                  ),
+                  backgroundColor: theme.colorScheme.primary,
+                  behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              );
+            },
+          ),
+          const Divider(height: 1),
+          _buildSettingsItem(
+            theme,
+            Icons.logout,
+            'Logout',
+            'Sign out of your account',
+            () => _showLogoutConfirmation(context),
+            isDestructive: true,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAboutCard(ThemeData theme) {
+    return ModernCard(
+      child: Column(
+        children: [
+          _buildSettingsItem(
+            theme,
+            Icons.info_outline,
+            'App Version',
+            '1.0.0',
+            () {},
+          ),
+          const Divider(height: 1),
+          _buildSettingsItem(
+            theme,
+            Icons.help_outline,
+            'Help & Support',
+            'Get help and contact support',
+            () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: const Text('Help section will be implemented soon'),
+                  backgroundColor: theme.colorScheme.primary,
+                  behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSettingsItem(
+    ThemeData theme,
+    IconData icon,
+    String title,
+    String subtitle,
+    VoidCallback onTap, {
+    bool isDestructive = false,
+  }) {
+    final color = isDestructive ? Colors.red : theme.colorScheme.onSurface;
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              color: isDestructive ? Colors.red : theme.colorScheme.primary,
+              size: 24,
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: color,
+                    ),
+                  ),
+                  if (subtitle.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color:
+                            isDestructive
+                                ? Colors.red.withValues(alpha: 0.7)
+                                : theme.colorScheme.onSurface.withValues(
+                                  alpha: 0.6,
+                                ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            Icon(
+              Icons.arrow_forward_ios,
+              size: 16,
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

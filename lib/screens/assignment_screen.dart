@@ -5,6 +5,9 @@ import 'add_assignment_screen.dart';
 import '../widgets/custom_card.dart';
 import '../utils/subject_images.dart';
 import '../utils/performance_config.dart';
+import '../utils/cache_manager.dart';
+import '../models/assignment.dart';
+import '../services/firebase_service.dart';
 
 class AssignmentScreen extends StatefulWidget {
   const AssignmentScreen({super.key});
@@ -14,7 +17,7 @@ class AssignmentScreen extends StatefulWidget {
 }
 
 class _AssignmentScreenState extends State<AssignmentScreen>
-    with SingleTickerProviderStateMixin, PerformanceOptimizedMixin {
+    with SingleTickerProviderStateMixin, PerformanceOptimizedMixin, CacheMixin {
   late AnimationController _animationController;
 
   // Search functionality
@@ -38,33 +41,6 @@ class _AssignmentScreenState extends State<AssignmentScreen>
     end: Offset.zero,
   ).chain(CurveTween(curve: Curves.easeInOut));
 
-  final List<Map<String, dynamic>> _assignments = [
-    {
-      'id': '1',
-      'title': 'Mathematics Homework',
-      'subject': 'Mathematics',
-      'dueDate': '2025-04-28',
-      'description': 'Complete exercises 1-10 from chapter 5',
-      'isCompleted': false,
-    },
-    {
-      'id': '2',
-      'title': 'Science Project',
-      'subject': 'Science',
-      'dueDate': '2025-05-01',
-      'description': 'Research and create a presentation on renewable energy',
-      'isCompleted': false,
-    },
-    {
-      'id': '3',
-      'title': 'History Essay',
-      'subject': 'History',
-      'dueDate': '2025-04-30',
-      'description': 'Write a 1000-word essay on World War II',
-      'isCompleted': true,
-    },
-  ];
-
   // To track if the screen is first loaded
   bool _isFirstLoad = true;
 
@@ -75,6 +51,9 @@ class _AssignmentScreenState extends State<AssignmentScreen>
       vsync: this,
       duration: const Duration(milliseconds: 300),
     );
+
+    // Log screen view
+    FirebaseService.logScreenView('assignments_screen');
 
     // Add a small delay to ensure animations run after widget is fully built
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -89,25 +68,53 @@ class _AssignmentScreenState extends State<AssignmentScreen>
     super.dispose();
   }
 
-  void _toggleAssignmentStatus(int index) {
-    setState(() {
-      _assignments[index]['isCompleted'] = !_assignments[index]['isCompleted'];
+  Future<void> _toggleAssignmentStatus(Assignment assignment) async {
+    try {
+      final updatedData = {'isCompleted': !assignment.isCompleted};
 
-      // Play animation when status changes
-      if (_assignments[index]['isCompleted']) {
-        _animationController.forward(from: 0.0);
-      } else {
-        _animationController.reverse(from: 1.0);
+      await FirebaseService.updateAssignment(assignment.id, updatedData);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              assignment.isCompleted
+                  ? 'Assignment marked as incomplete'
+                  : 'Assignment marked as complete',
+            ),
+          ),
+        );
       }
-    });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error updating assignment: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
-  void _addNewAssignment(Map<String, dynamic> assignment) {
-    setState(() {
-      // Add an ID to the assignment
-      assignment['id'] = DateTime.now().millisecondsSinceEpoch.toString();
-      _assignments.add(assignment);
-    });
+  Future<void> _addNewAssignment(Map<String, dynamic> assignmentData) async {
+    try {
+      await FirebaseService.addAssignment(assignmentData);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Assignment added successfully')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error adding assignment: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   Widget _buildEmptyState() {
@@ -115,18 +122,18 @@ class _AssignmentScreenState extends State<AssignmentScreen>
     String subtitle;
     IconData icon;
 
-    if (_assignments.isEmpty) {
-      title = 'No Assignments Yet';
-      subtitle = 'Tap the + button to add assignments';
-      icon = Icons.assignment_outlined;
-    } else if (_searchQuery.isNotEmpty) {
+    if (_searchQuery.isNotEmpty) {
       title = 'No Results Found';
       subtitle = 'Try a different search term';
       icon = Icons.search_off;
-    } else {
+    } else if (_selectedFilter != 'All') {
       title = 'No $_selectedFilter Assignments';
       subtitle = 'Try changing the filter';
       icon = Icons.filter_list_off;
+    } else {
+      title = 'No Assignments Yet';
+      subtitle = 'Use the floating action button to add assignments';
+      icon = Icons.assignment_outlined;
     }
 
     return Center(
@@ -189,11 +196,11 @@ class _AssignmentScreenState extends State<AssignmentScreen>
     );
   }
 
-  Widget _buildAssignmentCard(Map<String, dynamic> assignment, int index) {
-    final bool isCompleted = assignment['isCompleted'] ?? false;
-    final String subject = assignment['subject'] ?? 'General';
-    final String dueDate = assignment['dueDate'] ?? '';
-    final String description = assignment['description'] ?? '';
+  Widget _buildAssignmentCard(Assignment assignment, int index) {
+    final bool isCompleted = assignment.isCompleted;
+    final String subject = assignment.subject;
+    final String dueDate = assignment.dueDate;
+    final String description = assignment.description ?? '';
 
     // Get subject-specific styling
     final String imageUrl = SubjectUtils.getImageForSubject(subject);
@@ -221,7 +228,7 @@ class _AssignmentScreenState extends State<AssignmentScreen>
     );
 
     return CustomCard(
-      title: assignment['title'],
+      title: assignment.title,
       subtitle: formattedDueDate,
       description:
           description.isNotEmpty
@@ -244,10 +251,10 @@ class _AssignmentScreenState extends State<AssignmentScreen>
 
   void _showOptionsSheet(
     BuildContext context,
-    Map<String, dynamic> assignment,
+    Assignment assignment,
     int index,
   ) {
-    final bool isCompleted = assignment['isCompleted'] ?? false;
+    final bool isCompleted = assignment.isCompleted;
 
     showModalBottomSheet(
       context: context,
@@ -262,7 +269,7 @@ class _AssignmentScreenState extends State<AssignmentScreen>
 
   Widget _buildOptionsSheet(
     BuildContext context,
-    Map<String, dynamic> assignment,
+    Assignment assignment,
     int index,
     bool isCompleted,
   ) {
@@ -284,7 +291,7 @@ class _AssignmentScreenState extends State<AssignmentScreen>
           title: Text(isCompleted ? 'Mark as Incomplete' : 'Mark as Complete'),
           onTap: () {
             Navigator.pop(context);
-            _toggleAssignmentStatus(index);
+            _toggleAssignmentStatus(assignment);
           },
         ),
         ListTile(
@@ -303,14 +310,14 @@ class _AssignmentScreenState extends State<AssignmentScreen>
           ),
           onTap: () {
             Navigator.pop(context);
-            _confirmDelete(context, index);
+            _confirmDelete(context, assignment);
           },
         ),
       ],
     );
   }
 
-  void _confirmDelete(BuildContext context, int index) {
+  void _confirmDelete(BuildContext context, Assignment assignment) {
     showDialog(
       context: context,
       builder:
@@ -329,14 +336,27 @@ class _AssignmentScreenState extends State<AssignmentScreen>
                   'Delete',
                   style: TextStyle(color: Colors.red),
                 ),
-                onPressed: () {
-                  Navigator.pop(context);
-                  setState(() {
-                    _assignments.removeAt(index);
-                  });
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Assignment deleted')),
-                  );
+                onPressed: () async {
+                  final navigator = Navigator.of(context);
+                  final scaffoldMessenger = ScaffoldMessenger.of(context);
+                  navigator.pop();
+                  try {
+                    await FirebaseService.deleteAssignment(assignment.id);
+                    if (mounted) {
+                      scaffoldMessenger.showSnackBar(
+                        const SnackBar(content: Text('Assignment deleted')),
+                      );
+                    }
+                  } catch (e) {
+                    if (mounted) {
+                      scaffoldMessenger.showSnackBar(
+                        SnackBar(
+                          content: Text('Error deleting assignment: $e'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
+                  }
                 },
               ),
             ],
@@ -346,7 +366,7 @@ class _AssignmentScreenState extends State<AssignmentScreen>
 
   void _navigateToDetails(
     BuildContext context,
-    Map<String, dynamic> assignment,
+    Assignment assignment,
     int index,
   ) {
     Navigator.push(
@@ -354,8 +374,8 @@ class _AssignmentScreenState extends State<AssignmentScreen>
       PageRouteBuilder(
         pageBuilder:
             (context, animation, secondaryAnimation) => AssignmentDetailsScreen(
-              assignment: assignment,
-              onStatusToggle: () => _toggleAssignmentStatus(index),
+              assignment: assignment.toMap()..['id'] = assignment.id,
+              onStatusToggle: () => _toggleAssignmentStatus(assignment),
             ),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           return SlideTransition(
@@ -367,7 +387,7 @@ class _AssignmentScreenState extends State<AssignmentScreen>
     );
   }
 
-  void _editAssignment(Map<String, dynamic> assignment, int index) {
+  void _editAssignment(Assignment assignment, int index) {
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -375,31 +395,48 @@ class _AssignmentScreenState extends State<AssignmentScreen>
             (context) => AddAssignmentScreen(
               onAssignmentAdded:
                   (updatedAssignment) =>
-                      _updateAssignment(updatedAssignment, index),
-              assignmentToEdit: assignment,
+                      _updateAssignment(updatedAssignment, assignment.id),
+              assignmentToEdit: assignment.toMap()..['id'] = assignment.id,
             ),
       ),
     );
   }
 
-  void _updateAssignment(Map<String, dynamic> updatedAssignment, int index) {
-    setState(() {
-      _assignments[index] = updatedAssignment;
-    });
+  Future<void> _updateAssignment(
+    Map<String, dynamic> updatedAssignment,
+    String assignmentId,
+  ) async {
+    try {
+      // Remove the ID from the update data as it shouldn't be updated
+      updatedAssignment.remove('id');
+      await FirebaseService.updateAssignment(assignmentId, updatedAssignment);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Assignment updated successfully')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error updating assignment: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
-  List<Map<String, dynamic>> get _filteredAssignments {
-    List<Map<String, dynamic>> filtered = List.from(_assignments);
+  List<Assignment> _getFilteredAssignments(List<Assignment> assignments) {
+    List<Assignment> filtered = List.from(assignments);
 
     // Apply search filter
     if (_searchQuery.isNotEmpty) {
       filtered =
           filtered.where((assignment) {
-            final title = assignment['title']?.toString().toLowerCase() ?? '';
-            final subject =
-                assignment['subject']?.toString().toLowerCase() ?? '';
-            final description =
-                assignment['description']?.toString().toLowerCase() ?? '';
+            final title = assignment.title.toLowerCase();
+            final subject = assignment.subject.toLowerCase();
+            final description = (assignment.description ?? '').toLowerCase();
             final query = _searchQuery.toLowerCase();
 
             return title.contains(query) ||
@@ -412,43 +449,33 @@ class _AssignmentScreenState extends State<AssignmentScreen>
     switch (_selectedFilter) {
       case 'Completed':
         filtered =
-            filtered
-                .where((assignment) => assignment['isCompleted'] == true)
-                .toList();
+            filtered.where((assignment) => assignment.isCompleted).toList();
         break;
       case 'Pending':
         filtered =
-            filtered
-                .where((assignment) => assignment['isCompleted'] == false)
-                .toList();
+            filtered.where((assignment) => !assignment.isCompleted).toList();
         break;
       case 'Due Today':
         final today = DateTime.now();
         filtered =
             filtered.where((assignment) {
-              final dueDate = assignment['dueDate'];
-              if (dueDate != null) {
-                try {
-                  final date = DateTime.parse(dueDate);
-                  return date.year == today.year &&
-                      date.month == today.month &&
-                      date.day == today.day;
-                } catch (e) {
-                  return false;
-                }
+              try {
+                final date = DateTime.parse(assignment.dueDate);
+                return date.year == today.year &&
+                    date.month == today.month &&
+                    date.day == today.day;
+              } catch (e) {
+                return false;
               }
-              return false;
             }).toList();
         break;
       case 'Overdue':
         final today = DateTime.now();
         filtered =
             filtered.where((assignment) {
-              final dueDate = assignment['dueDate'];
-              final isCompleted = assignment['isCompleted'] ?? false;
-              if (dueDate != null && !isCompleted) {
+              if (!assignment.isCompleted) {
                 try {
-                  final date = DateTime.parse(dueDate);
+                  final date = DateTime.parse(assignment.dueDate);
                   return date.isBefore(today);
                 } catch (e) {
                   return false;
@@ -472,14 +499,14 @@ class _AssignmentScreenState extends State<AssignmentScreen>
     });
   }
 
-  void _showFilterDialog() {
+  void _showFilterDialog(List<Assignment> assignments) {
     // Calculate counts for each filter
     final Map<String, int> filterCounts = {
-      'All': _assignments.length,
-      'Completed': _assignments.where((a) => a['isCompleted'] == true).length,
-      'Pending': _assignments.where((a) => a['isCompleted'] == false).length,
-      'Due Today': _getDueTodayCount(),
-      'Overdue': _getOverdueCount(),
+      'All': assignments.length,
+      'Completed': assignments.where((a) => a.isCompleted).length,
+      'Pending': assignments.where((a) => !a.isCompleted).length,
+      'Due Today': _getDueTodayCount(assignments),
+      'Overdue': _getOverdueCount(assignments),
     };
 
     showDialog(
@@ -543,32 +570,26 @@ class _AssignmentScreenState extends State<AssignmentScreen>
     );
   }
 
-  int _getDueTodayCount() {
+  int _getDueTodayCount(List<Assignment> assignments) {
     final today = DateTime.now();
-    return _assignments.where((assignment) {
-      final dueDate = assignment['dueDate'];
-      if (dueDate != null) {
-        try {
-          final date = DateTime.parse(dueDate);
-          return date.year == today.year &&
-              date.month == today.month &&
-              date.day == today.day;
-        } catch (e) {
-          return false;
-        }
+    return assignments.where((assignment) {
+      try {
+        final date = DateTime.parse(assignment.dueDate);
+        return date.year == today.year &&
+            date.month == today.month &&
+            date.day == today.day;
+      } catch (e) {
+        return false;
       }
-      return false;
     }).length;
   }
 
-  int _getOverdueCount() {
+  int _getOverdueCount(List<Assignment> assignments) {
     final today = DateTime.now();
-    return _assignments.where((assignment) {
-      final dueDate = assignment['dueDate'];
-      final isCompleted = assignment['isCompleted'] ?? false;
-      if (dueDate != null && !isCompleted) {
+    return assignments.where((assignment) {
+      if (!assignment.isCompleted) {
         try {
-          final date = DateTime.parse(dueDate);
+          final date = DateTime.parse(assignment.dueDate);
           return date.isBefore(today);
         } catch (e) {
           return false;
@@ -651,26 +672,34 @@ class _AssignmentScreenState extends State<AssignmentScreen>
                 )
                 : null,
         actions: [
-          Stack(
-            children: [
-              IconButton(
-                icon: const Icon(Icons.filter_list),
-                onPressed: _showFilterDialog,
-              ),
-              if (_selectedFilter != 'All')
-                Positioned(
-                  right: 8,
-                  top: 8,
-                  child: Container(
-                    width: 12,
-                    height: 12,
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.primary,
-                      shape: BoxShape.circle,
-                    ),
+          FutureBuilder<List<Assignment>>(
+            future: FirebaseService.getUserAssignments(),
+            builder: (context, snapshot) {
+              final assignments =
+                  snapshot.hasData ? snapshot.data! : <Assignment>[];
+
+              return Stack(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.filter_list),
+                    onPressed: () => _showFilterDialog(assignments),
                   ),
-                ),
-            ],
+                  if (_selectedFilter != 'All')
+                    Positioned(
+                      right: 8,
+                      top: 8,
+                      child: Container(
+                        width: 12,
+                        height: 12,
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.primary,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ),
+                ],
+              );
+            },
           ),
           IconButton(
             icon: Icon(_isSearching ? Icons.close : Icons.search),
@@ -678,10 +707,45 @@ class _AssignmentScreenState extends State<AssignmentScreen>
           ),
         ],
       ),
-      body:
-          _filteredAssignments.isEmpty
-              ? _buildEmptyState()
-              : _buildAssignmentsList(),
+      body: FutureBuilder<List<Assignment>>(
+        future: FirebaseService.getUserAssignments(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (snapshot.hasError) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error, size: 64, color: Colors.red),
+                  const SizedBox(height: 16),
+                  Text('Error: ${snapshot.error}'),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () {
+                      setState(() {});
+                    },
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          final assignments =
+              snapshot.hasData ? snapshot.data! : <Assignment>[];
+
+          final filteredAssignments = _getFilteredAssignments(assignments);
+
+          if (filteredAssignments.isEmpty) {
+            return _buildEmptyState();
+          }
+
+          return _buildAssignmentsList(filteredAssignments);
+        },
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: _navigateToAddAssignment,
         child: const Icon(Icons.add),
@@ -689,22 +753,19 @@ class _AssignmentScreenState extends State<AssignmentScreen>
     );
   }
 
-  Widget _buildAssignmentsList() {
-    final filteredAssignments = _filteredAssignments;
+  Widget _buildAssignmentsList(List<Assignment> assignments) {
     return ListView.builder(
-      itemCount: filteredAssignments.length,
+      itemCount: assignments.length,
       padding: const EdgeInsets.only(bottom: 80), // Space for FAB
-      physics: const BouncingScrollPhysics(), // Better iOS-style scrolling
+      physics: const BouncingScrollPhysics(),
       itemBuilder: (context, index) {
-        final assignment = filteredAssignments[index];
-        final originalIndex = _assignments.indexOf(assignment);
-        return _buildOptimizedListItem(assignment, originalIndex);
+        final assignment = assignments[index];
+        return _buildOptimizedListItem(assignment, index);
       },
     );
   }
 
-  Widget _buildOptimizedListItem(Map<String, dynamic> assignment, int index) {
-    // Use more efficient AnimatedContainer instead of TweenAnimationBuilder
+  Widget _buildOptimizedListItem(Assignment assignment, int index) {
     return AnimatedContainer(
       duration: Duration(milliseconds: 300 + (index * 50)),
       curve: Curves.easeOutQuad,

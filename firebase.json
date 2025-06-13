@@ -1,0 +1,45 @@
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "smartedu-48462",
+          "appId": "1:387403274966:android:81639752ff4d91d13c0777",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "smartedu-48462",
+          "configurations": {
+            "android": "1:387403274966:android:81639752ff4d91d13c0777",
+            "ios": "1:387403274966:ios:f07e0049abf2705d3c0777",
+            "web": "1:387403274966:web:e799db3b910eda953c0777",
+            "windows": "1:387403274966:web:68e6ae8fc7d8edbc3c0777"
+          }
+        }
+      }
+    }
+  },
+  "hosting": {
+    "public": "build/web",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  },
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "storage": {
+    "rules": "storage.rules"
+  }
+}
