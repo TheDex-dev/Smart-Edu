@@ -1,3 +1,4 @@
 {
-    "cmake.sourceDirectory": "/home/stolas/AndroidStudioProjects/smart_edu/linux"
+    "cmake.sourceDirectory": "/home/stolas/AndroidStudioProjects/smart_edu/linux",
+    "java.configuration.updateBuildConfiguration": "automatic"
 }

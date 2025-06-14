@@ -9,12 +9,12 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:firebase_performance/firebase_performance.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'dart:io';
-import '../core/config/firebase_options.dart';
-import '../core/utils/cache_manager.dart';
-import '../features/assignments/models/assignment.dart';
-import '../shared/models/user_profile.dart';
-import '../features/auth/models/profile_settings.dart';
-import '../core/data/mock_data.dart';
+import '../config/firebase_options.dart';
+import '../../../core/utils/cache_manager.dart';
+import '../../features/assignments/models/assignment.dart';
+import '../../shared/models/user_profile.dart';
+import '../../features/auth/models/profile_settings.dart';
+import '../../../core/data/mock_data.dart';
 
 class FirebaseService {
   static FirebaseAuth? _auth;

@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_displaymode/flutter_displaymode.dart';
-import 'screens/profile_screen.dart';
-import 'screens/assignment_screen.dart';
-import 'screens/splash_screen.dart';
-import 'utils/performance_config.dart';
-import 'utils/cache_manager.dart';
-import 'utils/app_helpers.dart';
-import 'utils/modern_theme.dart';
-import 'services/firebase_service.dart';
-import 'services/performance_service.dart';
-import 'widgets/auth_wrapper.dart';
+import 'features/profile/screens/profile_screen.dart';
+import 'features/assignments/screens/role_based_assignment_screen.dart';
+import 'shared/screens/splash_screen.dart';
+import 'core/utils/performance_config.dart';
+import 'core/utils/cache_manager.dart';
+import 'core/utils/app_helpers.dart';
+import 'core/theme/modern_theme.dart';
+import 'core/services/firebase_service.dart';
+import 'core/services/performance_service.dart';
+import 'features/auth/widgets/auth_wrapper.dart';
 
 void main() async {
   // Catch any errors that occur during initialization
@@ -205,8 +205,8 @@ class _MainScreenState extends State<MainScreen>
   // Animation transitions
   late final Animatable<Offset> _screenTransitionOffset;
 
-  // Cached screens for better performance - pre-constructed
-  static const List<Widget> _screens = [AssignmentScreen(), ProfileScreen()];
+  // Screens for better performance - pre-constructed
+  final List<Widget> _screens = [const RoleBasedAssignmentScreen(), const ProfileScreen()];
 
   @override
   void initState() {

@@ -1,0 +1,9 @@
+# JVM Options for Android Studio / IntelliJ
+-Xms256m
+-Xmx1024m
+-XX:ReservedCodeCacheSize=256m
+-XX:+UseG1GC
+-XX:MaxGCPauseMillis=200
+-XX:+UnlockExperimentalVMOptions
+-Djava.net.preferIPv4Stack=true
+-Dfile.encoding=UTF-8
